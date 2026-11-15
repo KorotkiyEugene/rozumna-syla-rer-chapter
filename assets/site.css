@@ -7,6 +7,7 @@
   --accent: #1c7c82;
   --accent-dark: #145d62;
   --mark: #00929a;
+  --opp: #c8553d;
   --ok: #1b6e3c;
   --no: #a23b25;
 }
@@ -90,23 +91,57 @@ fieldset.card .explain:empty { display: none; }
 .mark.no { color: var(--no); }
 .status { min-height: 1.6rem; font-weight: 600; }
 .readout { background: var(--surface); border-left: 4px solid var(--mark); padding: 0.6rem 0.9rem; max-width: 46rem; }
-/* a model with sliders: the name of a slider and its value stand over the slider, the picture takes the
-   whole width of the text and shrinks with the screen */
-.model { max-width: 46rem; }
-.model label { display: flex; flex-direction: column; gap: 0.2rem; max-width: 100%; }
-.model input[type="range"] { width: 17rem; max-width: 100%; margin: 0; accent-color: var(--accent); }
-.model output { font-weight: 600; }
-.model svg { display: block; width: 100%; height: auto; margin: 0.4rem 0; }
-.model svg .grid { fill: none; stroke: var(--line); stroke-width: 1; }
-/* the curve has the colour of the curves of figure 3.2 of the chapter, and its fill their tint */
-.model svg .curve { fill: rgba(0, 146, 154, 0.16); stroke: var(--mark); stroke-width: 2; stroke-linejoin: round; }
-.model svg .edge { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 5 4; }
-.model svg .element { fill: var(--ink); }
-/* the words around the picture are text of the page: words inside the picture would grow with it.
-   The half circle of the picture leaves 6 % of its width free on each side */
-.model .ahead, .model .sides { max-width: none; margin: 0; color: var(--muted); font-size: 0.9rem; }
-.model .ahead { text-align: center; }
-.model .sides { display: flex; justify-content: space-between; padding: 0 6%; }
+/* A live picture (a demonstration): the sliders in one row above the pictures that they change. The sliders
+   stay at the top of the window while the reader looks at the pictures. */
+.demo { max-width: 60rem; }
+.demo .controls { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 0.5rem 1.6rem; padding: 0.5rem 0; background: #fff; border-bottom: 1px solid var(--line); }
+.demo label { display: flex; flex-direction: column; gap: 0.15rem; flex: 1 1 15rem; min-width: 0; max-width: 100%; }
+.demo input[type="range"] { width: 100%; max-width: 22rem; min-height: 1.5rem; margin: 0; accent-color: var(--accent); }
+.demo output { font-weight: 600; }
+/* The pictures of a demonstration. On a telephone they stand one under another in the order of the page. In a
+   wider window the two pictures of one group («pair») stand side by side with their sentence under both. On a
+   computer the first picture runs across, and under it the pair stands beside the last picture («aside»). */
+.demo .stage, .demo .pair { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 1.4rem; align-items: start; }
+.demo .panel { min-width: 0; max-width: none; margin: 0.7rem 0 0.5rem; }
+.demo .aside .panel { max-width: 34rem; }
+.demo .panel figcaption { margin-top: 0.2rem; text-align: left; font-style: normal; font-size: 0.9rem; }
+.demo .readout { margin: 0.3rem 0 0.9rem; }
+@media (max-width: 36rem) {
+  .demo label { font-size: 0.9rem; }
+}
+@media (min-width: 36rem) {
+  .demo .pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .demo .pair .readout { grid-column: 1 / -1; }
+}
+@media (min-width: 56rem) {
+  .demo .stage { grid-template-columns: minmax(0, 2fr) minmax(0, 1.1fr); }
+  .demo .stage > .panel { grid-column: 1 / -1; }
+}
+/* A picture is drawn by its script for the width that it has: one unit of the picture is one point of the
+   screen, and a word inside it keeps the size given here at any width of the window. */
+.demo svg { display: block; width: 100%; }
+.demo svg text { font-size: 0.8125rem; fill: var(--ink); paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round; }
+.demo svg text.quiet { fill: var(--muted); }
+.demo svg text.num { text-anchor: middle; }
+.demo svg .grid { fill: none; stroke: var(--line); stroke-width: 1; }
+/* the curve and the signals have the colour of the receiving side in the figures of the chapter, the wave and
+   the direction to the transmitter the colour of a transmitter */
+.demo svg .curve { fill: rgba(0, 146, 154, 0.16); stroke: var(--mark); stroke-width: 2; stroke-linejoin: round; }
+.demo svg .edge { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 5 4; }
+.demo svg .element { fill: var(--ink); }
+.demo svg .plate { fill: var(--surface); stroke: var(--ink); stroke-width: 1; }
+.demo svg .front { stroke: var(--opp); stroke-width: 1.4; }
+.demo svg .front.first { stroke-width: 2.6; }
+.demo svg .way { stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 2 3; }
+.demo svg .travel { stroke: var(--opp); stroke-width: 1.8; }
+.demo svg .travel.head { fill: var(--opp); stroke: none; }
+.demo svg .signal { fill: none; stroke: var(--mark); stroke-width: 1.5; stroke-linejoin: round; }
+.demo svg .sum { fill: none; stroke: var(--mark); stroke-width: 2.6; stroke-linejoin: round; }
+.demo svg .crest, .demo svg .most { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 5 4; }
+.demo svg .lead { stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 2 3; }
+.demo svg .scale { fill: none; stroke: var(--ink); stroke-width: 1; }
+.demo svg .ray { stroke: var(--opp); stroke-width: 2; }
+.demo svg .heard { fill: var(--opp); stroke: #fff; stroke-width: 2; }
 details { margin: 0.8rem 0; }
 summary { cursor: pointer; color: var(--accent-dark); }
 @media print { .top, nav.contents, button { display: none; } }
