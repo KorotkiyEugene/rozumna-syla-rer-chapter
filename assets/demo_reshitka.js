@@ -1,154 +1,104 @@
 /* The live picture of an antenna array on the page of topic 3: panels (в) and (г) of figure 3.5 of the chapter,
-   moved by three sliders. Every number of the array comes from array.js (window.RerArray): this file holds no
-   formula of the array, it only draws. The words inside the pictures come with the page
-   (window.RER_T3.demo.reshitka.words). A picture is drawn point for point (draw.js), so all four are drawn
-   again when the width of the window changes. */
+   moved by two sliders. The transmitter stands where it stands in the figure. Every number of the array comes
+   from array.js (window.RerArray): this file holds no formula of the array, it only draws. The words inside
+   the pictures and the direction to the transmitter come with the page (window.RER_T3.demo.reshitka).
+   A picture is drawn point for point (draw.js), so both are drawn again when the width of the window changes. */
 (function () {
   "use strict";
-  var A = window.RerArray, D = window.RerDraw, WORDS = window.RER_T3.demo.reshitka.words;
+  var A = window.RerArray, D = window.RerDraw, PAGE = window.RER_T3.demo.reshitka, WORDS = PAGE.words;
+  var FROM = PAGE.from;  // the direction to the transmitter, in degrees from the line of the elements
 
   function byId(id) { return document.getElementById(id); }
-  var input = { n: byId("array-n"), delay: byId("array-delay"), from: byId("array-from") };
-  var value = { n: byId("array-n-out"), delay: byId("array-delay-out"), from: byId("array-from-out") };
-  var picture = { wave: byId("array-wave"), received: byId("array-received"), delayed: byId("array-delayed"),
-                  plot: byId("array-plot") };
-  var told = byId("array-told"), beamTold = byId("array-out");
+  var input = { n: byId("array-n"), delay: byId("array-delay") };
+  var value = { n: byId("array-n-out"), delay: byId("array-delay-out") };
+  var picture = { signals: byId("array-signals"), plot: byId("array-plot") };
+  var told = byId("array-out");
 
-  var SPAN = 3;          // periods of the wave that the pictures of the signals show, as panel (г) of the figure
-  var GUTTER = 58;       // points at the left of a picture of signals: the number of a row and its delay
-  var SHORTEST = 14;     // a crest of the wave shorter than this, in points, would look like a speck: it is left out
-  var SIGNAL = 9;        // points from the middle of a row to a crest of its signal, at most
-  var SUM = 72;          // points from the middle of the row of the sum to the largest possible sum, at most
+  var SPAN = 3;          // periods of the wave that the picture of the signals shows, as panel (г) of the figure
+  var GUTTER = 100;      // points at the left of the picture of the signals: the number of a row and its delay
+  var NUMBER = 14;       // the middle of the column of the numbers of the elements, points from the left
+  var DELAY = 62;        // the middle of the column of the delays
+  var HEAD = 22;         // points above the first row: the heads of the two columns
+  var ROWS = 264;        // points of height that the rows take when they are many: 16 rows of words, each 16 points
+                         // high, fit in it without touching
+  var PITCH = 56;        // points between two rows, at most: a few rows do not leave most of the picture empty
+  var CREST = 0.36;      // from the middle of a row to a crest of its signal: this part of the distance between rows,
+  var HIGHEST = 16;      // and this many points at most
+  var GAP = 22;          // points between the last row and the strip of the sum: room for the words of the strip
+  var SUM = 28;          // points from the middle of the row of the sum to the largest possible sum
 
-  // What the sliders say. The slider of the transmitter counts degrees to the right of the direction straight
-  // ahead; the model counts a direction from the line of the elements, where straight ahead is 90.
   function state() {
-    return { n: Number(input.n.value), part: Math.round(Number(input.delay.value) * 100) / 100,
-             degrees: 90 - Number(input.from.value) };
+    return { n: Number(input.n.value), part: Math.round(Number(input.delay.value) * 100) / 100 };
   }
 
-  // ---------------------------------------------------------------- 1: the wave comes to the row of elements
-  // A view from above. The row lies near the lower edge with its middle in the middle of the picture. The wave
-  // is drawn in the part above the row (here «the sky»); a strip over the sky is kept clear for the word of
-  // the wave, so that no crest runs through the word.
-  function drawWave(s) {
-    var svg = picture.wave, wide = D.width(svg);
-    var pitch = Math.max(10, Math.min(26, (wide - 48) / (A.MAX_ELEMENTS - 1)));    // between neighbouring elements
-    var wave = pitch / A.SPACING;                                                  // one wavelength, in points
-    var skyTop = 22, rowY = skyTop + 2.6 * wave + 9, high = rowY + 32, middle = wide / 2;
-    var a = s.degrees * Math.PI / 180, ux = Math.cos(a), uy = -Math.sin(a);        // towards the transmitter
-    var places = A.places(s.n, A.SPACING), reach = A.arrival(s.n, A.SPACING, s.degrees);
-    var first = A.front(s.n, A.SPACING, s.degrees);
-    var seen = middle * Math.abs(ux) + (rowY - skyTop) * -uy;      // the furthest point of the sky along the way of the wave
-    var above = 8 / -uy;                                           // a way begins at the edge of the box of the row
-    var most = (rowY - skyTop) / -uy;                              // and ends at the top of the sky at the latest
-    var k, m, d, x, length, ends, r, tail, word;
-    D.sheet(svg, wide, high);
-    D.shape(svg, "rect", { x: middle + places[0] * wave - 12, y: rowY - 8,
-                           width: (places[s.n - 1] - places[0]) * wave + 24, height: 16, "class": "plate" });
-    // dotted: the way that the first crest still has to go to each element
-    for (k = 0; k < s.n; k += 1) {
-      x = middle + places[k] * wave;
-      length = Math.min(reach[k] * wave, most);
-      if (length > above + 2) {
-        D.shape(svg, "line", { x1: x + above * ux, y1: rowY + above * uy, x2: x + length * ux, y2: rowY + length * uy,
-                               "class": "way" });
-      }
-    }
-    // the crests of the wave: lines across its way, one wavelength apart; the first has just reached the row
-    for (m = 0; (first + m) * wave <= seen; m += 1) {
-      d = (first + m) * wave;
-      ends = D.within(middle + d * ux, rowY + d * uy, -uy, ux, 0, skyTop, wide, rowY + 1);
-      if (ends && Math.sqrt(Math.pow(ends[1][0] - ends[0][0], 2) + Math.pow(ends[1][1] - ends[0][1], 2)) >= SHORTEST) {
-        D.shape(svg, "line", { x1: ends[0][0], y1: ends[0][1], x2: ends[1][0], y2: ends[1][1],
-                               "class": m ? "front" : "front first" });
-      }
-    }
-    // the elements and their numbers: every number when there is room, otherwise the first, the last and every fourth
-    for (k = 0; k < s.n; k += 1) {
-      x = middle + places[k] * wave;
-      D.shape(svg, "circle", { cx: x, cy: rowY, r: 3, "class": "element" });
-      if (pitch >= 20 || k === 0 || k === s.n - 1 || ((k + 1) % 4 === 0 && k < s.n - 2)) {
-        D.shape(svg, "text", { x: x, y: rowY + 25, "class": "num" }, String(k + 1));
-      }
-    }
-    // the arrow of the way of the wave points at the middle of the row from the side of the transmitter; its
-    // word stands over its tail, in the clear strip
-    r = (rowY - skyTop - 6) / -uy;
-    if (Math.abs(ux) > 1e-6) { r = Math.min(r, (middle - 16) / Math.abs(ux)); }
-    tail = [middle + r * ux, rowY + r * uy];
-    D.arrow(svg, tail[0], tail[1], tail[0] - 30 * ux, tail[1] - 30 * uy, "travel", 9);
-    word = D.shape(svg, "text", { x: Math.max(26, Math.min(wide - 26, tail[0])), y: skyTop - 7 }, WORDS.wave);
-    word.setAttribute("text-anchor", "middle");
-  }
-
-  // ---------------------------------------------------------------- 2 and 3: the signals of the elements and their sum
-  // A row for each element, the time from the left to the right. `lags`: when each signal comes, in periods.
-  // `holds`: how long the array holds each signal; without it the picture shows the signals as they are received.
-  function drawSignals(svg, s, lags, holds) {
-    var wide = D.width(svg), n = s.n;
-    var amp = Math.min(SIGNAL, SUM / n), row = Math.max(16, 2.6 * amp), top = 20;
+  // ---------------------------------------------------------------- the signals of the elements and their sum
+  // A row for each element, the time from the left to the right. `sum` is what array.js says of the signals at
+  // the adder: `lags` (when each of them comes, in periods) and `delays` (how long the array holds each of them).
+  // The picture has one height for every count of elements, so the page under it stays where it is.
+  function drawSignals(s, sum) {
+    var svg = picture.signals, wide = D.width(svg), n = s.n;
+    var pitch = Math.min(PITCH, ROWS / n), amp = Math.min(CREST * pitch, HIGHEST);
     var left = GUTTER, right = wide - 6, period = (right - left) / SPAN;
-    var ySum = top + n * row + 10 + n * amp, yScale = ySum + n * amp + 14, high = yScale + 10;
-    var steps = Math.max(60, Math.ceil((right - left) / 2)), latest = 0, k, i, t, y, from, points, total;
+    var ySum = HEAD + n * pitch + GAP + SUM, high = HEAD + ROWS + GAP + 2 * SUM + 4;
+    var steps = Math.max(120, Math.ceil(right - left)), k, i, t, y, points, total, word;
     function x(moment) { return left + moment * period; }
-    function rowY(index) { return top + row * (index + 0.5); }
+    function rowY(index) { return HEAD + pitch * (index + 0.5); }
     D.sheet(svg, wide, high);
 
-    // lines through the crests of the signals, from above the first row to under the last one: slanted when
-    // the signals come at different moments
-    A.crests(lags, SPAN).forEach(function (pair) {
+    // lines through the crests of the signals, from the first row to the last: slanted when the signals come
+    // at different moments, upright when they come together. Half a point of room at the sides keeps a line
+    // that stands exactly at an edge of the rows.
+    A.crests(sum.lags, SPAN).forEach(function (pair) {
       var x1 = x(pair[0]), y1 = rowY(0) - amp, x2 = x(pair[1]), y2 = rowY(n - 1) - amp;
-      var ends = D.within(x1, y1, x2 - x1, y2 - y1, left, top - 2, right, top + n * row + 2);
+      var ends = D.within(x1, y1, x2 - x1, y2 - y1, left - 0.5, y1, right + 0.5, y2);
       if (ends) {
         D.shape(svg, "line", { x1: ends[0][0], y1: ends[0][1], x2: ends[1][0], y2: ends[1][1], "class": "crest" });
       }
     });
 
+    D.shape(svg, "text", { x: NUMBER, y: 14, "class": "quiet num" }, WORDS.number);
+    D.shape(svg, "text", { x: DELAY, y: 14, "class": "quiet num" }, WORDS.delay);
     for (k = 0; k < n; k += 1) {
       y = rowY(k);
-      from = holds ? A.shown(holds[k]) : 0;          // the signal that the array holds begins later in the picture
-      latest = Math.max(latest, from);
-      if (from > 0) { D.shape(svg, "line", { x1: x(0), y1: y, x2: x(from), y2: y, "class": "lead" }); }
       points = [];
       for (i = 0; i <= steps; i += 1) {
-        t = from + (SPAN - from) * i / steps;
-        points.push([x(t), y - amp * A.signal(t, lags[k])]);
+        t = SPAN * i / steps;
+        points.push([x(t), y - amp * A.signal(t, sum.lags[k])]);
       }
       D.shape(svg, "path", { d: D.path(points), "class": "signal" });
-      D.shape(svg, "text", { x: 12, y: y + 4.5, "class": "num" }, String(k + 1));
-      if (holds) { D.shape(svg, "text", { x: 26, y: y + 4.5, "class": "quiet" }, D.number(holds[k])); }
+      D.shape(svg, "text", { x: NUMBER, y: y + 4.5, "class": "num" }, String(k + 1));
+      D.shape(svg, "text", { x: DELAY, y: y + 4.5, "class": "quiet num" }, D.number(sum.delays[k]));
     }
-    if (holds) { D.shape(svg, "text", { x: 26, y: 12, "class": "quiet" }, WORDS.delay); }
 
-    // the sum, at the scale of the rows, between two lines that show the largest possible sum
+    // the sum, in a strip as high as the largest possible sum: the sum of signals that all come together. The
+    // strip is one thing with one label; its two edges are plain lines, so only the lines through the crests
+    // are dashed in this picture.
+    D.shape(svg, "rect", { x: left, y: ySum - SUM, width: right - left, height: 2 * SUM, "class": "band" });
     D.shape(svg, "line", { x1: left, y1: ySum, x2: right, y2: ySum, "class": "grid" });
     [-1, 1].forEach(function (side) {
-      D.shape(svg, "line", { x1: left, y1: ySum + side * n * amp, x2: right, y2: ySum + side * n * amp, "class": "most" });
+      D.shape(svg, "line", { x1: left, y1: ySum + side * SUM, x2: right, y2: ySum + side * SUM, "class": "most" });
     });
     points = [];
     for (i = 0; i <= steps; i += 1) {
-      t = latest + (SPAN - latest) * i / steps;
+      t = SPAN * i / steps;
       total = 0;
-      for (k = 0; k < n; k += 1) { total += A.signal(t, lags[k]); }
-      points.push([x(t), ySum - amp * total]);
+      for (k = 0; k < n; k += 1) { total += A.signal(t, sum.lags[k]); }
+      points.push([x(t), ySum - SUM * total / n]);
     }
     D.shape(svg, "path", { d: D.path(points), "class": "sum" });
-    D.shape(svg, "text", { x: 4, y: ySum + 4.5 }, WORDS.sum);
-
-    // one period of the wave on the axis of the time
-    D.shape(svg, "path", { "class": "scale", d: "M" + x(0) + " " + (yScale - 4) + "V" + (yScale + 4) + "M" + x(0) + " " +
-                           yScale + "H" + x(1) + "M" + x(1) + " " + (yScale - 4) + "V" + (yScale + 4) });
-    D.shape(svg, "text", { x: x(1) + 6, y: yScale + 4.5, "class": "quiet" }, WORDS.period);
+    D.shape(svg, "text", { x: (NUMBER + DELAY) / 2, y: ySum + 4.5, "class": "num" }, WORDS.sum);
+    word = D.shape(svg, "text", { x: right, y: ySum - SUM - 6, "class": "quiet" }, WORDS.most);
+    word.setAttribute("text-anchor", "end");
   }
 
-  // ---------------------------------------------------------------- 4: from which directions the array receives
+  // ---------------------------------------------------------------- from which directions the array receives
   // A view from above. The row lies on the lower line with its middle in the middle of the picture. The curve is
-  // brought to one at its best direction, so the best direction always reaches the half circle.
+  // brought to one at its best direction, so the best direction always reaches the half circle. The transmitter
+  // is far away: its dot stands on the half circle, where a beam that is turned to the transmitter ends.
   function drawPlot(s) {
     var svg = picture.plot, wide = D.width(svg);
     var radius = Math.min(wide / 2 - 12, 230), top = 30, x0 = wide / 2, y0 = top + radius, high = y0 + 26;
-    var directions = [], places = A.places(s.n, A.SPACING), values, beam, heard, k, word;
+    var directions = [], places = A.places(s.n, A.SPACING), toRight = FROM < 90, values, beam, source, k, word, length;
     function at(degrees, r) {
       var a = degrees * Math.PI / 180;
       return [x0 + r * Math.cos(a), y0 - r * Math.sin(a)];
@@ -175,14 +125,23 @@
     ray(beam.from, "edge");
     ray(beam.to, "edge");
 
-    // the direction to the transmitter, and on it a dot: how well the array hears the transmitter
-    ray(s.degrees, "ray");
-    heard = at(s.degrees, radius * A.heard(s.n, A.SPACING, A.shift(s.part), s.degrees));
-    D.shape(svg, "circle", { cx: heard[0], cy: heard[1], r: 4.5, "class": "heard" });
+    // the direction to the transmitter and the transmitter itself; its word stands beside it, outside the half
+    // circle, and moves towards the middle when the picture is too narrow for it
+    ray(FROM, "ray");
+    source = at(FROM, radius);
+    D.shape(svg, "circle", { cx: source[0], cy: source[1], r: 5, "class": "source" });
+    word = D.shape(svg, "text", { x: source[0], y: source[1] - 10 }, WORDS.source);
+    length = word.getComputedTextLength();
+    word.setAttribute("x", toRight ? Math.min(source[0] + 9, wide - 2 - length) : Math.max(source[0] - 9 - length, 2));
 
+    // the elements, and the numbers of the two at the ends of the row: the rows of the signals have the same numbers
     for (k = 0; k < s.n; k += 1) {
       D.shape(svg, "circle", { cx: x0 + places[k] * 16, cy: y0, r: 2.6, "class": "element" });
     }
+    word = D.shape(svg, "text", { x: x0 + places[0] * 16 - 5, y: y0 + 18 }, "1");
+    word.setAttribute("text-anchor", "end");
+    D.shape(svg, "text", { x: x0 + places[s.n - 1] * 16 + 5, y: y0 + 18 }, String(s.n));
+
     word = D.shape(svg, "text", { x: x0, y: y0 - radius - 12, "class": "quiet" }, WORDS.ahead);
     word.setAttribute("text-anchor", "middle");
     D.shape(svg, "text", { x: x0 - radius, y: y0 + 18, "class": "quiet" }, WORDS.left);
@@ -192,20 +151,11 @@
 
   function draw() {
     var s = state();
-    var fits = s.n >= A.MIN_ELEMENTS && s.n <= A.MAX_ELEMENTS && Math.abs(s.part) <= A.MAX_SHIFT + 1e-9 &&
-               Math.abs(90 - s.degrees) <= A.MAX_TURN + 1e-9;
-    var plain, held;
     value.n.textContent = String(s.n);
     value.delay.textContent = A.held(s.part);
-    value.from.textContent = A.side(s.degrees);
-    told.textContent = A.told(s.n, s.part, s.degrees);
-    beamTold.textContent = A.readout(s.n, s.part);
-    if (!fits) { return; }
-    plain = A.added(s.n, A.SPACING, 0, s.degrees);
-    held = A.added(s.n, A.SPACING, s.part, s.degrees);
-    drawWave(s);
-    drawSignals(picture.received, s, plain.lags, null);
-    drawSignals(picture.delayed, s, held.lags, held.delays);
+    told.textContent = (A.readout(s.n, s.part) + " " + A.summed(s.n, s.part, FROM)).trim();
+    if (!(s.n >= A.MIN_ELEMENTS && s.n <= A.MAX_ELEMENTS && Math.abs(s.part) <= A.MAX_SHIFT + 1e-9)) { return; }
+    drawSignals(s, A.added(s.n, A.SPACING, s.part, FROM));
     drawPlot(s);
   }
 

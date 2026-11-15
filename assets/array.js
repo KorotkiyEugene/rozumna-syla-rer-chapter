@@ -12,7 +12,6 @@
   var SPACING = 0.5;               // the distance between neighbouring elements, in wavelengths
   var MIN_ELEMENTS = 2, MAX_ELEMENTS = 16;
   var MAX_SHIFT = 0.3;             // the largest delay between neighbours of the page, in periods of the wave
-  var MAX_TURN = 60;               // the transmitter of the page stands at most this far from straight ahead, degrees
   var HALF_POWER = Math.SQRT1_2;   // the curve shows the size of the signal: half the power is 1/√2 of the size
 
   // A shift between neighbours given in parts of a period, in radians: a whole period is a full turn.
@@ -116,24 +115,11 @@
     return { times: size, share: size / n, lags: lags, arrival: reach, delays: hold };
   }
 
-  // The part of a period that a picture shows of a delay: an oscillation repeats itself, so a signal held for
-  // 1,25 of a period looks as one held for 0,25.
-  function shown(delay) {
-    var part = delay - Math.floor(delay + 1e-9);
-    return part < 1e-9 ? 0 : part;
-  }
-
   // The places of the elements along the row, in wavelengths, from the left: the middle of the row is zero.
   function places(n, spacing) {
     var out = [], k;
     for (k = 0; k < n; k += 1) { out.push((k - (n - 1) / 2) * spacing); }
     return out;
-  }
-
-  // How far from the middle of the row, along the direction to the transmitter, the first crest of the wave is
-  // at the moment when it reaches the first element, in wavelengths.
-  function front(n, spacing, degrees) {
-    return (n - 1) / 2 * spacing * Math.abs(Math.cos(degrees * Math.PI / 180));
   }
 
   // Lines through the crests of signals whose lags grow evenly from the first row to the last. A crest of
@@ -147,11 +133,6 @@
     return out;
   }
 
-  // How well a transmitter in one direction is heard: from 0 to 1 of the best direction of the row.
-  function heard(n, spacing, shiftRad, degrees) {
-    return sum(n, spacing, shiftRad, degrees) / peak(n, spacing, shiftRad).value;
-  }
-
   function whole(x) {
     return Math.floor(x + 0.5);
   }
@@ -160,11 +141,15 @@
     return String(x).replace(".", ",").replace("-", "−");
   }
 
-  // The sentence under the picture of the beam. A positive delay turns the beam to the right of the picture.
+  // Whether the model describes an array of `n` elements with the delay `part` between neighbours.
+  function fits(n, part) {
+    return typeof n === "number" && typeof part === "number" && isFinite(n) && isFinite(part) &&
+           Math.floor(n) === n && n >= MIN_ELEMENTS && n <= MAX_ELEMENTS && Math.abs(part) <= MAX_SHIFT + 1e-9;
+  }
+
+  // The sentence about the beam. A positive delay turns the beam to the right of the picture.
   function readout(n, part) {
-    var fits = typeof n === "number" && typeof part === "number" && isFinite(n) && isFinite(part) &&
-               Math.floor(n) === n && n >= MIN_ELEMENTS && n <= MAX_ELEMENTS && Math.abs(part) <= MAX_SHIFT + 1e-9;
-    if (!fits) {
+    if (!fits(n, part)) {
       return "Оберіть кількість елементів від " + MIN_ELEMENTS + " до " + MAX_ELEMENTS + " і затримку, не більшу за " +
              plain(MAX_SHIFT) + "\u00a0періоду.";
     }
@@ -175,45 +160,20 @@
     return where + " Ширина променя " + whole(b.to - b.from) + "°.";
   }
 
-  // Where a direction lies for a reader who looks at the picture: counted from the direction straight ahead.
-  function side(degrees) {
-    var turn = whole(Math.abs(90 - degrees));
-    return turn === 0 ? "прямо перед решіткою" : "на " + turn + "° " + (degrees < 90 ? "праворуч" : "ліворуч");
-  }
-
   // «у 4 рази», «у 8 разів»: how many times, for the counts of elements of the page.
   function timesWord(n) {
     return "у " + n + (n >= 2 && n <= 4 ? " рази" : " разів");
   }
 
-  // How the sum of the signals is told, with the delay `part` between neighbours.
-  function sumWords(n, part, degrees) {
+  // The sentence about the sum of the signals of a transmitter that stands in the direction `degrees`, with
+  // the delay `part` between neighbours. Empty for an array that the model does not describe: the sentence of
+  // the beam asks for other values then.
+  function summed(n, part, degrees) {
+    if (!fits(n, part) || typeof degrees !== "number" || !isFinite(degrees)) { return ""; }
     var perCent = whole(100 * added(n, SPACING, part, degrees).share);
-    return perCent === 100 ? "сигнали збігаються: сума " + timesWord(n) + " більша за сигнал одного елемента"
-         : perCent === 0 ? "сигнали гасять один одного: суми майже немає"
-         : "сума сигналів становить " + perCent + "\u00a0% від найбільшої можливої";
-  }
-
-  // The sentences under the pictures of the wave and of the signals: where the transmitter stands, which
-  // element its wave reaches first, how the signals add up without the delays and with them.
-  function told(n, part, degrees) {
-    var fits = typeof n === "number" && typeof part === "number" && typeof degrees === "number" && isFinite(degrees) &&
-               Math.floor(n) === n && n >= MIN_ELEMENTS && n <= MAX_ELEMENTS && Math.abs(part) <= MAX_SHIFT + 1e-9 &&
-               Math.abs(90 - degrees) <= MAX_TURN + 1e-9;
-    if (!fits) {
-      return "Оберіть напрямок на передавач: не далі ніж " + MAX_TURN + "° від напрямку прямо.";
-    }
-    var where = "Передавач стоїть " + side(degrees) + ": хвиля доходить до ";
-    var plain = sumWords(n, 0, degrees);
-    if (whole(Math.abs(90 - degrees)) === 0) {
-      where += "всіх елементів одночасно.";
-    } else {
-      where += "елемента " + (degrees < 90 ? n : 1) + " раніше, ніж до елемента " + (degrees < 90 ? 1 : n) + ".";
-    }
-    if (part === 0) {
-      return where + " Затримок немає. " + plain.charAt(0).toUpperCase() + plain.slice(1) + ".";
-    }
-    return where + " Без затримок " + plain + ". Із затримками " + sumWords(n, part, degrees) + ".";
+    return perCent === 100 ? "Сигнали передавача збігаються: сума " + timesWord(n) + " більша за сигнал одного елемента."
+         : perCent === 0 ? "Сигнали передавача гасять один одного: суми майже немає."
+         : "Сума сигналів передавача становить " + perCent + "\u00a0% від найбільшої можливої.";
   }
 
   // The words beside the slider of the delay: its size and the side to which the delays grow. With a positive
@@ -224,9 +184,8 @@
   }
 
   var api = { SPACING: SPACING, MIN_ELEMENTS: MIN_ELEMENTS, MAX_ELEMENTS: MAX_ELEMENTS, MAX_SHIFT: MAX_SHIFT,
-              MAX_TURN: MAX_TURN, shift: shift, pattern: pattern, beam: beam, readout: readout,
-              arrival: arrival, delays: delays, signal: signal, added: added, shown: shown, places: places,
-              front: front, crests: crests, heard: heard, side: side, told: told, held: held };
+              shift: shift, pattern: pattern, beam: beam, readout: readout, arrival: arrival, delays: delays,
+              signal: signal, added: added, places: places, crests: crests, held: held, summed: summed };
   if (typeof module !== "undefined" && module.exports) {
     module.exports = api;
   } else {
