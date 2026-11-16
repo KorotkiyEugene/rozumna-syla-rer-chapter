@@ -1,8 +1,8 @@
-/* Page of topic 2: the table of answers of «Вправа № 1» and the calculator of creative task 3.
+/* Page of topic 2: the table of answers of «Вправа № 1» and the calculator of creative task 3 with its picture.
    The data of the task stand inside the page (window.RER_T2), written there by the model of the area. */
 (function () {
   "use strict";
-  var D = window.RER_T2, R = window.RerRadio;
+  var D = window.RER_T2, R = window.RerRadio, L = window.RerLink;
 
   function el(tag, attrs, text) {
     var node = document.createElement(tag);
@@ -11,9 +11,10 @@
     return node;
   }
 
-  // A number stays on one line with the word after it: «395 нВт», «5 м».
+  // A number stays on one line with the word after it: «395 нВт», «5 м». So does a number with a power of ten:
+  // «9,00 · 10¹⁴».
   function glue(text) {
-    return text.replace(/(\d) (?=[а-яіїєґА-ЯІЇЄҐ])/g, "$1\u00a0");
+    return text.replace(/(\d) (?=[а-яіїєґА-ЯІЇЄҐ])/g, "$1\u00a0").replace(/ · (?=10)/g, "\u00a0·\u00a0");
   }
 
   // ---------------------------------------------------------------- the exercise: a card for each signal
@@ -79,16 +80,28 @@
   // ---------------------------------------------------------------- the calculator of the equation of Friis
   var inputs = ["calc-p", "calc-f", "calc-d"].map(function (id) { return document.getElementById(id); });
   var out = document.getElementById("calc-out"), table = document.querySelector("#calc-table tbody");
+  var picture = document.getElementById("calc-picture");
+  // on a narrow screen a row of the table is a block, and every cell stands under the name of its column
+  var heads = Array.prototype.map.call(document.querySelectorAll("#calc-table thead th"), function (th) {
+    return th.textContent;
+  });
 
+  // The picture is drawn only when the equation gives a power: the sentence under the form says why it does not.
   function compute() {
     var v = inputs.map(function (input) { return input.value === "" ? NaN : Number(input.value); });
+    var shown = R.link(D.c_m_s, v[0], v[1], v[2]);
+    if (shown) {
+      picture.removeAttribute("hidden");
+      L.draw(picture, shown);
+    } else {
+      picture.setAttribute("hidden", "");
+    }
     out.textContent = glue(R.readout(D.c_m_s, v[0], v[1], v[2]));
     table.textContent = "";
     R.rows(D.c_m_s, v[0], v[1], v[2]).forEach(function (row) {
       var tr = el("tr");
-      tr.appendChild(el("th", { scope: "row" }, glue(row[0])));
-      tr.appendChild(el("td", {}, glue(row[1])));
-      tr.appendChild(el("td", {}, glue(row[2])));
+      tr.appendChild(el("th", { scope: "row", "data-label": heads[0] }, glue(row[0])));
+      row.slice(1).forEach(function (cell, k) { tr.appendChild(el("td", { "data-label": heads[k + 1] }, glue(cell))); });
       table.appendChild(tr);
     });
   }
@@ -98,5 +111,6 @@
     compute();
   });
   inputs.forEach(function (input) { input.addEventListener("input", compute); });
+  window.addEventListener("resize", compute);
   compute();
 })();

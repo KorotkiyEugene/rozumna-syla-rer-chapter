@@ -13,6 +13,10 @@
   var POWER = [[1e6, "МВт"], [1e3, "кВт"], [1, "Вт"], [1e-3, "мВт"], [1e-6, "мкВт"], [1e-9, "нВт"],
                [1e-12, "пВт"], [1e-15, "фВт"]];
   var LENGTH = [[1e3, "км"], [1, "м"], [1e-2, "см"], [1e-3, "мм"]];
+  var AREA = [[1e6, "км²"], [1, "м²"], [1e-4, "см²"], [1e-6, "мм²"]];
+  var GAP = "\u00a0";              // between the groups of three digits of a long number: it stays on one line
+  var PAPER = 1.4;                 // the paper of the picture: one wavelength takes from 1,4 to 14 of its squares
+  var FAR = 1e12;                  // from this number on a ratio of two areas is printed as «5,90 · 10¹⁴»
   var RAISED = { "-": "⁻", "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷",
                  "8": "⁸", "9": "⁹" };
 
@@ -26,6 +30,20 @@
   function received(c, p, f, d) {
     var share = wavelength(c, f) / (4 * Math.PI * d);
     return p * share * share;
+  }
+
+  // The area in square metres of a sphere of the radius d metres: over it the power of a transmitter that works
+  // equally in every direction is spread at the distance d.
+  function sphere(d) {
+    return 4 * Math.PI * d * d;
+  }
+
+  // The area in square metres of the patch of that sphere through which passes as much power as an antenna
+  // receives, when the antenna works equally in every direction («effective area of an isotropic antenna»).
+  // The share of the patch in the sphere is the factor of the equation of Friis: received = p · patch / sphere.
+  function patch(c, f) {
+    var lam = wavelength(c, f);
+    return lam * lam / (4 * Math.PI);
   }
 
   // Level of a power of p watts, in decibels above one milliwatt.
@@ -53,6 +71,56 @@
     var parts = x.toExponential(2).split("e");
     var exponent = parts[1].replace("+", "").split("").map(function (ch) { return RAISED[ch]; }).join("");
     return parts[0].replace(".", ",") + " · 10" + exponent;
+  }
+
+  // A number with n significant digits: «314,2», «12,43», «0,07958», and «31 420» with a gap between the groups
+  // of three digits before the comma.
+  function digits(x, n) {
+    var r = Number(x.toPrecision(n));
+    if (r < 1) {
+      return r.toPrecision(n).replace(".", ",");
+    }
+    var parts = r.toFixed(Math.max(0, n - String(Math.floor(r)).length)).split(".");
+    var whole = parts[0].length > 3 ? parts[0].replace(/\B(?=(\d{3})+$)/g, GAP) : parts[0];
+    return whole + (parts.length > 1 ? "," + parts[1] : "");
+  }
+
+  function four(x) {
+    return digits(x, 4);
+  }
+
+  // An area in square metres as the page prints it: «314,2 м²», «12,43 см²». One digit more than a power has,
+  // so that a reader who divides the printed numbers gets the printed power.
+  function area(a) {
+    var r = Number(a.toPrecision(4)), i;
+    for (i = 0; i < AREA.length - 1; i += 1) {
+      if (r >= AREA[i][0]) { break; }
+    }
+    if (r / AREA[i][0] >= 1e9 || r / AREA[i][0] < 1e-3) {
+      return science(a) + " м²";
+    }
+    return four(r / AREA[i][0]) + " " + AREA[i][1];
+  }
+
+  // How many times one area is larger than another: «252 700», and «4,39 · 10¹⁴» from a million millions on.
+  function ratio(x) {
+    return Number(x.toPrecision(4)) >= FAR ? science(x) : four(x);
+  }
+
+  // The division that the sentence of the calculator prints, «100 мВт : 252 700 = 396 нВт»: the ratio with as
+  // many digits, from four to seven, as make the printed numbers give the printed power when a reader divides
+  // them. `exact` is false when no such ratio exists: the sentence then says «≈». Powers in watts.
+  function division(emitted, times, got) {
+    var from = Number(emitted.toPrecision(3)), n;
+    if (Number(times.toPrecision(4)) >= FAR) {
+      return { ratio: science(times), exact: power(from / Number(times.toPrecision(3))) === power(got) };
+    }
+    for (n = 4; n <= 7; n += 1) {
+      if (power(from / Number(times.toPrecision(n))) === power(got)) {
+        return { ratio: digits(times, n), exact: true };
+      }
+    }
+    return { ratio: four(times), exact: false };
   }
 
   // A power in watts as the page prints it: «395 нВт», «25,0 Вт».
@@ -84,39 +152,72 @@
     return typeof x === "number" && isFinite(x) && x > 0;
   }
 
+  // The side of a square of the paper as the picture names it: «1 см», «10 см», «1 м».
+  function square(u) {
+    var i;
+    for (i = 0; i < LENGTH.length - 1; i += 1) {
+      if (u >= LENGTH[i][0] * 0.999) { break; }
+    }
+    var n = u / LENGTH[i][0];
+    return (n < 1e-3 ? science(n) : plain(Number(n.toPrecision(3)))) + " " + LENGTH[i][1];
+  }
+
+  // What the picture of the calculator shows: the words of its labels and, for the paper on which the patch is
+  // drawn, the wavelength and the side of the patch in squares of the paper. A square is 1 mm, 1 cm, 10 cm, 1 m and
+  // so on: the size with which one wavelength takes from 1,4 to 14 squares. Null when readout() gives no power.
+  function link(c, pMw, fMhz, dM) {
+    if (!(positive(pMw) && positive(fMhz) && positive(dM))) {
+      return null;
+    }
+    var f = fMhz * MEGAHERTZ, lam = wavelength(c, f);
+    if (dM < lam) {
+      return null;
+    }
+    var p = received(c, pMw * MILLIWATT, f, dM), side = Math.sqrt(patch(c, f));
+    var unit = Math.pow(10, Math.floor(Math.log10(lam / PAPER)));
+    var divided = division(pMw * MILLIWATT, sphere(dM) / patch(c, f), p);
+    // the distance as it was typed while it is short, else with three digits: the label of the picture stays short
+    var radius = plain(dM).length <= 6 ? plain(dM) + " м" : length(dM);
+    return { radius: radius, sphere: area(sphere(dM)), wave: length(lam), patch: area(patch(c, f)),
+             side: length(side), square: square(unit), ratio: divided.ratio, exact: divided.exact,
+             emitted: power(pMw * MILLIWATT), received: power(p), level: level(p),
+             paper: { wave: lam / unit, side: side / unit } };
+  }
+
   // The answer of the calculator: power of the transmitter in milliwatts, frequency in megahertz, distance in metres.
   // Nearer than one wavelength the equation is not used: there it stops describing what an antenna receives.
   function readout(c, pMw, fMhz, dM) {
     if (!(positive(pMw) && positive(fMhz) && positive(dM))) {
       return "Введіть три додатні числа.";
     }
-    var f = fMhz * MEGAHERTZ, lam = wavelength(c, f);
-    var head = "Довжина хвилі " + length(lam) + ". ";
-    if (dM < lam) {
-      return head + "Відстань менша за довжину хвилі: так близько до антени рівняння Фрііса не діє.";
+    var shown = link(c, pMw, fMhz, dM);
+    if (!shown) {
+      return "Довжина хвилі " + length(wavelength(c, fMhz * MEGAHERTZ)) + ". Відстань менша за довжину хвилі: " +
+             "так близько до антени рівняння Фрііса не діє.";
     }
-    var p = received(c, pMw * MILLIWATT, f, dM);
-    return head + "Антена приймає " + power(p) + ", тобто " + level(p) + ".";
+    // a ratio written as «4,39 · 10¹⁴» stands in brackets after the sign of division
+    var by = shown.ratio.indexOf("·") < 0 ? shown.ratio : "(" + shown.ratio + ")";
+    return "Площа сфери, поділена на площу клаптика: приблизно " + shown.ratio + ". Антена приймає " +
+           shown.emitted + GAP + ": " + by + GAP + (shown.exact ? "= " : "≈ ") + shown.received + ", або " +
+           shown.level + ".";                       // a sign of the division never begins a line
   }
 
-  // The rows of the table under the calculator: [distance, received power, level] at the distance itself,
-  // twice as far and ten times as far. No rows when readout() gives no power.
+  // The rows of the table under the calculator: [distance, area of the sphere, received power, level] at the
+  // distance itself, twice as far and ten times as far. No rows when readout() gives no power.
   function rows(c, pMw, fMhz, dM) {
-    if (!(positive(pMw) && positive(fMhz) && positive(dM))) {
+    if (!link(c, pMw, fMhz, dM)) {
       return [];
     }
     var f = fMhz * MEGAHERTZ;
-    if (dM < wavelength(c, f)) {
-      return [];
-    }
     return FURTHER.map(function (k) {
       var p = received(c, pMw * MILLIWATT, f, dM * k);
-      return [plain(dM * k) + " м", power(p), level(p)];
+      return [plain(dM * k) + " м", area(sphere(dM * k)), power(p), level(p)];
     });
   }
 
-  var api = { wavelength: wavelength, received: received, dbm: dbm, power: power, length: length, level: level,
-              plain: plain, readout: readout, rows: rows };
+  var api = { wavelength: wavelength, received: received, sphere: sphere, patch: patch, dbm: dbm, power: power,
+              length: length, area: area, ratio: ratio, level: level, plain: plain, link: link, readout: readout,
+              rows: rows };
   if (typeof module !== "undefined" && module.exports) {
     module.exports = api;
   } else {

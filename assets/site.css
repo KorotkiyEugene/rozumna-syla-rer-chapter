@@ -130,6 +130,25 @@ fieldset.card .explain:empty { display: none; }
 .demo svg text.quiet { fill: var(--muted); }
 .demo svg text.num { text-anchor: middle; }
 .demo svg .grid { fill: none; stroke: var(--line); stroke-width: 1; }
+/* the picture of the calculator of topic 2: a sphere around a transmitter, a patch of it and squared paper */
+.demo svg[hidden] { display: none; }
+.demo svg text.strong { font-weight: 700; }
+.demo svg text.end { text-anchor: end; }
+.demo svg .ball { fill: rgba(0, 146, 154, 0.08); stroke: var(--accent); stroke-width: 2; }
+.demo svg .equator { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.demo svg .equator.back { stroke-dasharray: 5 4; }
+.demo svg .router { fill: #fff; stroke: var(--ink); stroke-width: 2; }
+.demo svg .router-line { stroke: var(--ink); stroke-width: 2; stroke-linecap: round; }
+.demo svg .router-dot { fill: var(--ink); }
+.demo svg .radius { stroke: var(--ink); stroke-width: 1.5; }
+.demo svg .patch { fill: var(--mark); stroke: var(--accent-dark); stroke-width: 1.5; }
+.demo svg .phone { fill: var(--ink); }
+.demo svg .screen { fill: var(--mark); }
+.demo svg .phone-dot { fill: #fff; }
+.demo svg .paper { fill: #fff; stroke: var(--line); stroke-width: 1.5; }
+.demo svg .paper-line { stroke: var(--line); stroke-width: 1; }
+.demo svg .wave { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+.demo svg .zoom { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 3; }
 /* the curve and the signals have the colour of the receiving side in the figures of the chapter, the
    transmitter and the direction to it the colour of a transmitter */
 .demo svg .curve { fill: rgba(0, 146, 154, 0.16); stroke: var(--mark); stroke-width: 2; stroke-linejoin: round; }
