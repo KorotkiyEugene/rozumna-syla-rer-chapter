@@ -31,6 +31,10 @@ p, li { max-width: 46rem; }
 p, li, td, th, label { overflow-wrap: break-word; }
 .lead { font-size: 1.08rem; }
 .note { color: var(--muted); }
+/* a task of the chapter at the head of a part of a page: the words of the textbook, set apart from the words
+   of the page. It has no side fields of its own, so a narrow screen keeps the length of its lines */
+blockquote.task { margin: 0.6rem 0 1rem; padding: 0.1rem 0.9rem; max-width: 46rem; border-left: 4px solid var(--accent); background: var(--surface); }
+blockquote.task p { margin: 0.5rem 0; }
 a { color: var(--accent-dark); }
 nav.contents ul { list-style: none; padding: 0; margin: 0.6rem 0 0; display: flex; flex-wrap: wrap; gap: 0.4rem 0.6rem; }
 nav.contents a { display: inline-block; padding: 0.3rem 0.7rem; border: 1px solid var(--line); border-radius: 1rem; text-decoration: none; background: var(--surface); }

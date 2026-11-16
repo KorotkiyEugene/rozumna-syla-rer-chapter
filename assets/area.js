@@ -67,7 +67,7 @@
   function readout(d, p) {
     return "Пост " + d.post.id + " у точці (" + num(p.x_km) + "; " + num(p.y_km) + ") км" +
       (p.on_hill ? ", на пагорбі: його антена на " + num(d.hill.rise_m, 0) + " м вище. " : ". ") +
-      "Звідси пост чує передавач, антена якого на висоті " + num(d.low_antenna_m, 0) + " м, до " + num(p.reach_km) + " км. " +
+      "Звідси пост чує передавач з антеною на висоті " + num(d.low_antenna_m, 0) + " м, до " + num(p.reach_km) + " км. " +
       "До " + d.target + " звідси " + num(p.to_target_km) + " км, тож пост " +
       (p.receives_target ? "приймає сигнал " : "не приймає сигналу ") + d.target + ". " +
       "До умовної лінії " + num(p.to_line_km) + " км.";
