@@ -135,6 +135,15 @@ fieldset.card .explain:empty { display: none; }
 .demo svg .grid { fill: none; stroke: var(--line); stroke-width: 1; }
 /* the picture of the calculator of topic 2: a sphere around a transmitter, a patch of it and squared paper */
 .demo svg[hidden] { display: none; }
+/* A live picture with a thing to drag: the disc around it takes the touch, the rest of the picture lets the page
+   scroll. The lines under such a picture begin with a mark of the colour of the line they speak of. */
+.demo svg .grip { touch-action: none; cursor: grab; }
+.demo svg .grip:focus-visible { outline: none; stroke: var(--accent-dark); stroke-width: 2; stroke-dasharray: 4 3; }
+.demo .modes { flex: 1 1 100%; margin: 0; }
+.demo .keys .row { display: block; margin: 0; }
+.demo .keys .row.strong { font-weight: 700; }
+.demo .keys .key { display: inline-block; width: 1.6rem; height: 0.25rem; margin-right: 0.55rem; vertical-align: middle; border-radius: 0.1rem; }
+.demo .keys .key.patch { width: 1.2rem; height: 0.8rem; }
 .demo svg text.strong { font-weight: 700; }
 .demo svg text.end { text-anchor: end; }
 .demo svg .ball { fill: rgba(0, 146, 154, 0.08); stroke: var(--accent); stroke-width: 2; }
