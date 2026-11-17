@@ -90,7 +90,7 @@
 
   // A number stays on one line with the word or the sign of per cent after it: «109 МГц», «25 %».
   function glue(text) {
-    return text.replace(/(\d) (?=[а-яіїєґА-ЯІЇЄҐ%])/g, "$1\u00a0");
+    return text.replace(/(\d) (?=[а-яіїєґА-ЯІЇЄҐ%])/g, "$1\u00a0").replace(/(^|[\s\u00a0])до (?=\d)/g, "$1до\u00a0");
   }
 
   // Write a sentence into an element of the page so that no name with a hyphen is cut between two lines and no
