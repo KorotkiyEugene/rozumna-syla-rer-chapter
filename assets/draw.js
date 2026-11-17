@@ -88,10 +88,16 @@
     return out;
   }
 
-  // Write a sentence into an element of the page so that no name with a hyphen is cut between two lines.
+  // A number stays on one line with the word or the sign of per cent after it: «109 МГц», «25 %».
+  function glue(text) {
+    return text.replace(/(\d) (?=[а-яіїєґА-ЯІЇЄҐ%])/g, "$1\u00a0");
+  }
+
+  // Write a sentence into an element of the page so that no name with a hyphen is cut between two lines and no
+  // number is parted from the word after it.
   function say(node, text) {
     node.textContent = "";
-    pieces(text).forEach(function (piece) {
+    pieces(glue(text)).forEach(function (piece) {
       var part = piece[1] ? document.createElement("span") : document.createTextNode(piece[0]);
       if (piece[1]) { part.className = "nw"; part.textContent = piece[0]; }
       node.appendChild(part);
@@ -99,7 +105,7 @@
   }
 
   var api = { number: number, width: width, sheet: sheet, shape: shape, path: path, within: within, arrow: arrow,
-              pieces: pieces, say: say };
+              pieces: pieces, glue: glue, say: say };
   if (typeof module !== "undefined" && module.exports) {
     module.exports = api;
   } else {
