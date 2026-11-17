@@ -58,7 +58,7 @@
     }
     person(left / 2 - 2, floor, metre);
 
-    told.textContent = W.told(f, P);
+    D.say(told, W.told(f, P));
     if (shown) { shown.textContent = (f / 1e6).toFixed(0); }
   }
 

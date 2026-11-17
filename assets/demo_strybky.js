@@ -44,7 +44,7 @@
     D.shape(svg, "text", { x: 0, y: 0, "class": "num", transform: "translate(15 " + (TOP + ROWS * row / 2) + ") rotate(-90)" },
             P.words.frequency + " →");
 
-    told.textContent = H.caughtText(H.caught(n, b, P.hops, P.seed), P.hops, P.words.caught);
+    D.say(told, H.caughtText(H.caught(n, b, P.hops, P.seed), P.hops, P.words.caught));
     if (channelsOut) { channelsOut.textContent = n; }
     if (bandOut) { bandOut.textContent = b; }
   }

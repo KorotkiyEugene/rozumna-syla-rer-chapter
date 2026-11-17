@@ -80,7 +80,7 @@
     D.shape(svg, "line", { x1: sx, y1: sy, x2: sx + P.grid * unit, y2: sy, stroke: "#1f2a2e", "stroke-width": 2 });
     D.shape(svg, "text", { x: sx + P.grid * unit / 2, y: sy - 6, "class": "num" }, P.words.scale);
 
-    told.textContent = F.sizeText(found.size, P.words.size);
+    D.say(told, F.sizeText(found.size, P.words.size));
     if (errorOut) { errorOut.textContent = e + P.words.degree; }
     if (angleOut) { angleOut.textContent = a + P.words.degree; }
   }

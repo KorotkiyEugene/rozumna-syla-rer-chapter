@@ -62,7 +62,7 @@
     D.shape(svg, "text", { x: LEFT + pw / 2, y: high - 6, "class": "num" }, P.words.f);
     D.shape(svg, "text", { x: 12, y: TOP + ph / 2, "class": "num", transform: "rotate(-90 12 " + (TOP + ph / 2) + ")" },
             P.words.width);
-    told.textContent = P.words.groups + counted[0] + P.words.alone + counted[1] + ".";
+    D.say(told, P.words.groups + counted[0] + P.words.alone + counted[1] + ".");
     if (reach) { reach.textContent = C.reachText(P.near, k, P.words); }
   }
 

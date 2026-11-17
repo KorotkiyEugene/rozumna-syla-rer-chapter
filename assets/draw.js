@@ -67,7 +67,39 @@
       return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" ") });
   }
 
-  var api = { number: number, width: width, sheet: sheet, shape: shape, path: path, within: within, arrow: arrow };
+  // A sentence cut into parts, each with a mark whether it must stay on one line: a name with a hyphen («Wi-Fi»,
+  // «NOAA-15», «Хортиця-М») stays whole, an ordinary word («будь-яка») may be cut. The rule of the pages
+  // (chapter_markup.py): the name holds a digit or a Latin letter, or one of its parts is one letter or capitals.
+  var WORD = "[0-9A-Za-zА-Яа-яІіЇїЄєҐґ’']";
+  function pieces(text) {
+    var found, out = [], from = 0, re = new RegExp(WORD + "+(?:-" + WORD + "+)+", "g");
+    function name(token) {
+      return /[0-9A-Za-z]/.test(token) || token.split("-").some(function (part) {
+        return part.length === 1 || (part === part.toUpperCase() && part !== part.toLowerCase());
+      });
+    }
+    while ((found = re.exec(text)) !== null) {
+      if (!name(found[0])) { continue; }
+      if (found.index > from) { out.push([text.slice(from, found.index), false]); }
+      out.push([found[0], true]);
+      from = found.index + found[0].length;
+    }
+    if (from < text.length) { out.push([text.slice(from), false]); }
+    return out;
+  }
+
+  // Write a sentence into an element of the page so that no name with a hyphen is cut between two lines.
+  function say(node, text) {
+    node.textContent = "";
+    pieces(text).forEach(function (piece) {
+      var part = piece[1] ? document.createElement("span") : document.createTextNode(piece[0]);
+      if (piece[1]) { part.className = "nw"; part.textContent = piece[0]; }
+      node.appendChild(part);
+    });
+  }
+
+  var api = { number: number, width: width, sheet: sheet, shape: shape, path: path, within: within, arrow: arrow,
+              pieces: pieces, say: say };
   if (typeof module !== "undefined" && module.exports) {
     module.exports = api;
   } else {

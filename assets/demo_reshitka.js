@@ -153,7 +153,7 @@
     var s = state();
     value.n.textContent = String(s.n);
     value.delay.textContent = A.held(s.part);
-    told.textContent = (A.readout(s.n, s.part) + " " + A.summed(s.n, s.part, FROM)).trim();
+    D.say(told, (A.readout(s.n, s.part) + " " + A.summed(s.n, s.part, FROM)).trim());
     if (!(s.n >= A.MIN_ELEMENTS && s.n <= A.MAX_ELEMENTS && Math.abs(s.part) <= A.MAX_SHIFT + 1e-9)) { return; }
     drawSignals(s, A.added(s.n, A.SPACING, s.part, FROM));
     drawPlot(s);

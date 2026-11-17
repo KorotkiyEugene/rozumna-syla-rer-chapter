@@ -86,7 +86,7 @@
     D.shape(svg, "polygon", { points: [[wide - RIGHT + 1, y(t)], [wide - 1, y(t) - 5], [wide - 1, y(t) + 5]].map(function (p) {
       return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" "), fill: P.colours.ink });
 
-    told.textContent = A.told(t, P);
+    D.say(told, A.told(t, P));
     if (shown) { shown.textContent = A.momentText(t); }
   }
 

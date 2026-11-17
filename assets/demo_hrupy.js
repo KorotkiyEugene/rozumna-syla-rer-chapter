@@ -72,7 +72,7 @@
     D.shape(svg, "line", { x1: EDGE, y1: floor + 9, x2: EDGE + 10 * unit, y2: floor + 9, stroke: P.colours.ink, "stroke-width": 2 });
     D.shape(svg, "text", { x: EDGE + 10 * unit + 6, y: floor + 13 }, P.words.scale);
 
-    told.textContent = G.told(score.merged, score.split, pts.length - score.right, pts.length, P.words.told);
+    D.say(told, G.told(score.merged, score.split, pts.length - score.right, pts.length, P.words.told));
     if (countOut) { countOut.textContent = k; }
     if (errorOut) { errorOut.textContent = D.number(e, 1); }
   }
