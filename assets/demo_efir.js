@@ -17,6 +17,7 @@
 
   var LEFT = 46, RIGHT = 12, TOP = 38;                 // room for the names and the numbers of the axes
   var SPECTRUM = 84, GAP = 18, ROWS = 240, BOTTOM = 8;  // the heights of the two panels, points of the screen
+  var LEGEND = 34, PIECE = 3;                          // the strip of colour under the spectrogram: its room and one piece
   var bytes = P.records.map(function (r) { return E.decode(r.levels); });
 
   function comma(x, digits) { return x.toFixed(digits).replace(".", ","); }
@@ -24,7 +25,7 @@
   function draw() {
     var r = P.records[Number(choice.value)], k = Math.min(Number(step.value), r.rows - 1);
     var levels = E.row(bytes[Number(choice.value)], r.bins, k), t = r.times[k];
-    var wide = Math.min(D.width(svg), 640), high = TOP + SPECTRUM + GAP + ROWS + BOTTOM;
+    var wide = Math.min(D.width(svg), 640), high = TOP + SPECTRUM + GAP + ROWS + BOTTOM + LEGEND;
     var spTop = TOP, spBot = TOP + SPECTRUM, sgTop = spBot + GAP, sgBot = sgTop + ROWS;
     function x(f) { return LEFT + (f - r.f_from) / (r.f_to - r.f_from) * (wide - LEFT - RIGHT); }
     function y(s) { return sgTop + s / r.shown_s * ROWS; }
@@ -63,6 +64,18 @@
     // The pointer at the right end of the line of the moment.
     D.shape(svg, "polygon", { points: [[wide - RIGHT + 1, y(t)], [wide - 1, y(t) - 5], [wide - 1, y(t) + 5]].map(function (p) {
       return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" "), fill: P.colours.ink });
+
+    // The legend: the colour of the spectrogram from less power to more power, as the strip of the figure. The
+    // colours of its pieces come with the page; a narrow screen takes every second piece.
+    var pace = wide < 420 ? 2 : 1, pieces = P.colours.strip.length / pace, strip = pieces * PIECE;
+    var sx = Math.round((wide - strip) / 2), sy = sgBot + 16, j;
+    for (j = 0; j < pieces; j += 1) {
+      D.shape(svg, "rect", { x: sx + j * PIECE, y: sy, width: PIECE, height: 10, fill: P.colours.strip[j * pace + pace - 1],
+        "shape-rendering": "crispEdges" });
+    }
+    D.shape(svg, "rect", { x: sx, y: sy, width: strip, height: 10, fill: "none", stroke: P.colours.muted, "stroke-width": 1 });
+    D.shape(svg, "text", { x: sx - 8, y: sy + 9, "class": "end" }, P.words.less);
+    D.shape(svg, "text", { x: sx + strip + 8, y: sy + 9 }, P.words.more);
 
     D.say(told, E.told(r, k, P.words));
     if (shown) { shown.textContent = E.momentText(r, k); }
