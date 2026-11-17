@@ -39,7 +39,7 @@
       select.addEventListener("change", function () { mark.textContent = ""; mark.className = "mark"; });
       return { select: select, mark: mark };
     }
-    var kind = choice([["РР", "РР"], ["РТР", "РТР"]], "Напрям (крок 1)");
+    var kind = choice([["РР", "РР"], ["РТР", "РТР"]], "Вид РЕР (крок 1)");
     var who = choice([["П1", WHO["П1"]], ["А", WHO["А"]], ["ніхто", WHO["ніхто"]]],
                      "Хто приймає о " + D.time + " (крок 2)");
     var explain = el("p", { "class": "explain" });
